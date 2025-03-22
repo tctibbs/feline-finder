@@ -1,39 +1,25 @@
-[tool.poetry]
-# Name and version of the library.
-name = "python_template"
+[project]
+name = "feline-finder"
 version = "0.1.0"
-
-# Short description of the project.
-description = "A Python template library for reusable Python project setups."
-
-# Author information.
-authors = ["Tristan Tibbs <tristantibbs@gmail.com>"]
-
-# License under which the project is distributed.
-license = "MIT"
-
-# Path to the README file for project documentation.
+description = "A Python-based project that scrapes and tracks cats available for adoption."
 readme = "README.md"
+authors = [{ name = "Tristan Tibbs", email = "tristantibbs@gmail.com" }]
+license = { text = "MIT" }
+requires-python = ">=3.12"
 
-# Specify where the package is located in the repository.
-packages = [
-    { include = "python_template", from = "src" }
+# Direct dependencies (runtime)
+dependencies = [
+   
 ]
 
-# Production dependencies (none in this example, add here if needed).
-[tool.poetry.dependencies]
-python = "^3.10" # Required Python version.
+[project.optional-dependencies]
+dev = [
+    "ruff", "mypy", "pytest"
+]
 
-# Development dependencies, not required in production.
-[tool.poetry.dev-dependencies]
-ruff = "^0.8.4"     # Ruff: A linter and code formatter.
-pytest = "^7.4.4"   # Pytest: A testing framework for running unit tests.
-mypy = "^1.14.0"    # Mypy: A static type checker for enforcing type annotations.
-
-# Poetry build system requirements.
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 
 [tool.mypy]
