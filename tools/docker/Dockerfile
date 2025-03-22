@@ -1,4 +1,4 @@
-# Use the official Python 3.12 slim image as the base image
+# Use the official Python 3.12 image as the base image
 FROM python:3.12
 
 # Force Python to send output directly to the terminal without buffering
