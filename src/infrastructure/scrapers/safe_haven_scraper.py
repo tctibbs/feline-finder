@@ -9,6 +9,34 @@ class SafeHavenScraper(CatScraper):
 
     def get_available_cats(self) -> list[Cat]:
         return [
-            Cat(name="Mittens", age="2 years", status="Available"),
-            Cat(name="Shadow", age="4 months", status="Available"),
+            Cat(
+                name="Mittens",
+                age="2 years",
+                gender="Female",
+                breed="Domestic Short Hair",
+                color="Black",
+                declawed=False,
+                special_needs=False,
+                good_with_cats=None,
+                good_with_dogs=None,
+                good_with_children=None,
+                status="Available",
+                story=None,
+                image_urls=[],
+            ),
+            Cat(
+                name="Shadow",
+                age="4 months",
+                gender="Male",
+                breed="Tabby",
+                color="Gray",
+                declawed=False,
+                special_needs=False,
+                good_with_cats=None,
+                good_with_dogs=None,
+                good_with_children=None,
+                status="Available",
+                story=None,
+                image_urls=[],
+            ),
         ]
