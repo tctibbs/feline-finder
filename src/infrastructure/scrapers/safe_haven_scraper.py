@@ -1,8 +1,10 @@
 """Scraper for Safe Haven for Cats."""
 
+from urllib.parse import urljoin
+
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+
 from src.entities import Cat
 from src.use_cases import CatScraper
 
@@ -29,12 +31,12 @@ class SafeHavenScraper(CatScraper):
             if idx == 2:
                 break
 
-            link = card.find("a", href=True)
-            if not link:
+            link = card.find("a", href=True)  # type: ignore
+            if link is None:
                 print(f"No link found for cat card #{idx}, skipping.")
                 continue
 
-            profile_url = urljoin(AVALIBLE_CATS_URL, link["href"])
+            profile_url = urljoin(AVALIBLE_CATS_URL, link["href"])  # type: ignore
             cat = self._scrape_cat_profile(profile_url)
 
             if cat:
@@ -90,15 +92,21 @@ class SafeHavenScraper(CatScraper):
 
     def _extract_name(self, soup: BeautifulSoup) -> str:
         """Returns the extracted cat's name."""
-        name_tag = soup.find("h5", class_="sme-anm-name")
-        name = name_tag.get_text(strip=True) if name_tag else "Unknown"
-        print(f"\tExtracted name: {name}")
+        intro_divs = soup.find_all("div", class_="et_pb_text_inner")
+        name = "Unknown"
+        for div in intro_divs:
+            text = div.get_text(strip=True)
+            if "Hey there!" in text:
+                name_part = text.split("Hey there!", 1)[-1][4:]
+                name = name_part.split("!")[0].strip()
+                break
+        print(f"Extracted name: {name}")
         return name
 
     def _extract_images(self, soup: BeautifulSoup) -> list[str]:
         """Returns the extracted image URLs."""
         image_tags = soup.find_all("img", class_="sme-round-small")
-        images = [str(img.get("src")) for img in image_tags if img.get("src")]
+        images = [str(img.get("src")) for img in image_tags if img.get("src")]  # type: ignore
         print(f"\tExtracted {len(images)} images.")
         return images
 
@@ -107,8 +115,8 @@ class SafeHavenScraper(CatScraper):
         stats = {}
         table = soup.find("table", class_="sme-grid")
         if table:
-            for row in table.find_all("tr", class_="sme-grid-row"):
-                cells = row.find_all("td", class_="sme-grid-cell")
+            for row in table.find_all("tr", class_="sme-grid-row"):  # type: ignore
+                cells = row.find_all("td", class_="sme-grid-cell")  # type: ignore
                 if len(cells) == 2:
                     key = cells[0].text.strip().lower()
                     value = cells[1].text.strip()
