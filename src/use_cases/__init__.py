@@ -6,5 +6,6 @@ logic, as well as any abstract interfaces needed to fulfill those use cases.
 """
 
 from .cat_scraper import CatScraper
+from .cat_repository import CatRepository
 
-__all__ = ["CatScraper"]
+__all__ = ["CatScraper", "CatRepository"]

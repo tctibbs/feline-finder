@@ -21,8 +21,8 @@ class Cat:
     story: str | None = None
     image_urls: list[str] | None = None
 
-    # def __str__(self) -> str:
-    #     return (
-    #         f"{self.name} ({self.age}, {self.gender}, {self.breed})"
-    #         f" - {self.status}"
-    #     )
+    def __str__(self) -> str:
+        return (
+            f"{self.name} ({self.age}, {self.gender}, {self.breed})"
+            f" - {self.status}"
+        )
