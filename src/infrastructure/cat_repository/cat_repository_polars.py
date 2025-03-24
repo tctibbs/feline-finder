@@ -31,6 +31,7 @@ class PolarsCatRepository(CatRepository):
                     "image_urls": pl.List(pl.Utf8),
                 }
             )
+            self._save()
 
     def _save(self) -> None:
         """Save current state to Parquet."""
@@ -39,23 +40,21 @@ class PolarsCatRepository(CatRepository):
     def add_cat(self, cat: Cat) -> None:
         """Add a new cat to the repository."""
         new_row = pl.DataFrame(
-            [
-                {
-                    "name": cat.name,
-                    "age": cat.age,
-                    "gender": cat.gender,
-                    "breed": cat.breed,
-                    "color": cat.color,
-                    "declawed": cat.declawed,
-                    "special_needs": cat.special_needs,
-                    "good_with_cats": cat.good_with_cats,
-                    "good_with_dogs": cat.good_with_dogs,
-                    "good_with_children": cat.good_with_children,
-                    "status": cat.status,
-                    "story": cat.story,
-                    "image_urls": cat.image_urls or [],
-                }
-            ]
+            {
+                "name": [cat.name],
+                "age": [cat.age],
+                "gender": [cat.gender],
+                "breed": [cat.breed],
+                "color": [cat.color],
+                "declawed": [cat.declawed],
+                "special_needs": [cat.special_needs],
+                "good_with_cats": [cat.good_with_cats],
+                "good_with_dogs": [cat.good_with_dogs],
+                "good_with_children": [cat.good_with_children],
+                "status": [cat.status],
+                "story": [cat.story],
+                "image_urls": [[str(url) for url in (cat.image_urls or [])]],
+            },
         )
         self.df = pl.concat([self.df, new_row], how="vertical")
         self._save()
