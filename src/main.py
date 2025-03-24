@@ -22,19 +22,28 @@ database = src.infrastructure.cat_repository.PolarsCatRepository(
 # Initialize the scraper for Safe Haven for Cats
 scraper = src.infrastructure.scrapers.SafeHavenScraper()
 
-# List existing cats in the database
+# Check available cats
+available_cats = scraper.get_available_listings()
+
+# Get existing cats from database
 existing_cats = database.list_cats()
-logger.info(f"Currently {len(existing_cats)} cats in the database.")
+logger.info(f"Currently {len(existing_cats)} cats in database.")
 for cat in existing_cats:
-    logger.debug(cat)
+    logger.debug(f"\t{cat}")
 
-# Scrape available cats
-cats = scraper.get_available_cats()
+# Identify cats needing scraping
+cats_to_scrape = {
+    name: url
+    for name, url in available_cats.items()
+    if name not in [cat.name for cat in existing_cats]
+}
+logger.info(f"{len(cats_to_scrape)} new cats to scrape.")
 
-# Add scraped cats to the repository and print them
-for cat in cats:
-    if database.get_cat_by_name(cat.name):
-        logger.info(f"{cat.name} already exists in database, skipping.")
-        continue
-    database.add_cat(cat)
-    logger.success(f"Added {cat.name} to database.")
+# Scrape and add new cats to database
+for cat_name, profile_url in cats_to_scrape.items():
+    cat = scraper.scrape_cat_profile(profile_url)
+    if cat:
+        database.add_cat(cat)
+        logger.success(f"Added '{cat.name}' to database.")
+    else:
+        logger.error(f"Failed to scrape '{cat_name}'.")

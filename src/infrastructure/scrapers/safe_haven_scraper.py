@@ -15,7 +15,8 @@ AVAILABLE_CATS_URL = "https://www.safehavenforcats.org"
 class SafeHavenScraper(CatScraper):
     """Scraper for Safe Haven for Cats."""
 
-    def get_available_cats(self) -> list[Cat]:
+    def get_available_listings(self) -> dict[str, str]:
+        """Scrape available cat names and their profile URLs."""
         listing_url = urljoin(AVAILABLE_CATS_URL, "/adopt/meet-the-cats/")
         logger.info(f"Fetching main cat listing from: {listing_url}")
 
@@ -24,30 +25,68 @@ class SafeHavenScraper(CatScraper):
 
         soup = BeautifulSoup(response.text, "html.parser")
         cat_cards = soup.find_all("div", class_="sme-card")
-        logger.info(f"Found {len(cat_cards)} cat cards.")
+        # logger.info(f"Found {len(cat_cards)} cat cards.")
 
-        cats: list[Cat] = []
+        cat_profiles = {}
 
-        for idx, card in enumerate(cat_cards, start=1):
-            if idx > 2:
-                break
-
-            link = card.find("a", href=True)  # type: ignore
-            if link is None:
-                logger.warning(f"No link found for cat card #{idx}, skipping.")
+        for card in cat_cards:
+            name_tag = card.find("h5", class_="sme-anm-name")
+            if not name_tag:
+                logger.warning("Cat name not found in card, skipping.")
                 continue
 
-            profile_url = urljoin(AVAILABLE_CATS_URL, link["href"])  # type: ignore
-            cat = self._scrape_cat_profile(profile_url)
+            link = name_tag.find("a", href=True)
+            if not link:
+                logger.warning(
+                    "Profile URL not found in cat name tag, skipping."
+                )
+                continue
 
-            if cat:
-                logger.success(f"Successfully scraped '{cat.name}'.")
-                cats.append(cat)
-            else:
-                logger.error(f"Failed to scrape cat at {profile_url}.")
+            cat_name = link.text.strip()
+            profile_url = link["href"]
+            if profile_url not in cat_profiles.values():
+                cat_profiles[cat_name] = profile_url
 
-        logger.info(f"Total cats scraped successfully: {len(cats)}")
-        return cats
+        logger.info(f"Total cats avalible for adoption: {len(cat_profiles)}")
+        return cat_profiles
+
+    def scrape_cat_profile(self, profile_url: str) -> Cat | None:
+        """Public method to scrape a single cat profile."""
+        return self._scrape_cat_profile(profile_url)
+
+    # def get_available_cats(self) -> list[Cat]:
+    #     listing_url = urljoin(AVAILABLE_CATS_URL, "/adopt/meet-the-cats/")
+    #     logger.info(f"Fetching main cat listing from: {listing_url}")
+
+    #     response = requests.get(listing_url)
+    #     response.raise_for_status()
+
+    #     soup = BeautifulSoup(response.text, "html.parser")
+    #     cat_cards = soup.find_all("div", class_="sme-card")
+    #     logger.info(f"Found {len(cat_cards)} cat cards.")
+
+    #     cats: list[Cat] = []
+
+    #     for idx, card in enumerate(cat_cards, start=1):
+    #         if idx > 2:
+    #             break
+
+    #         link = card.find("a", href=True)  # type: ignore
+    #         if link is None:
+    #             logger.warning(f"No link found for cat card #{idx}, skipping.")
+    #             continue
+
+    #         profile_url = urljoin(AVAILABLE_CATS_URL, link["href"])  # type: ignore
+    #         cat = self._scrape_cat_profile(profile_url)
+
+    #         if cat:
+    #             logger.success(f"Successfully scraped '{cat.name}'.")
+    #             cats.append(cat)
+    #         else:
+    #             logger.error(f"Failed to scrape cat at {profile_url}.")
+
+    #     logger.info(f"Total cats scraped successfully: {len(cats)}")
+    #     return cats
 
     def _scrape_cat_profile(self, url: str) -> Cat | None:
         logger.debug(f"Scraping cat profile from: {url}")
