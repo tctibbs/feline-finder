@@ -5,3 +5,4 @@ BeautifulSoup4
 requests
 polars
 loguru
+pydantic

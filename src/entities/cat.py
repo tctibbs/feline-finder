@@ -1,10 +1,9 @@
 """Cat data model."""
 
-from dataclasses import dataclass
+from pydantic import BaseModel, HttpUrl
 
 
-@dataclass
-class Cat:
+class Cat(BaseModel):
     """Encapsulates information pertaining to a cat listing."""
 
     name: str
@@ -19,7 +18,7 @@ class Cat:
     good_with_children: bool | None
     status: str
     story: str | None = None
-    image_urls: list[str] | None = None
+    image_urls: list[HttpUrl] | None = None
 
     def __str__(self) -> str:
         return (
