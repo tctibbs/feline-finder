@@ -1,69 +1,60 @@
 """Scraper for Safe Haven for Cats."""
 
 from urllib.parse import urljoin
-
 import requests
 from bs4 import BeautifulSoup
+from loguru import logger
 
 from src.entities import Cat
 from src.use_cases import CatScraper
 
-AVALIBLE_CATS_URL = "https://www.safehavenforcats.org"
+AVAILABLE_CATS_URL = "https://www.safehavenforcats.org"
 
 
 class SafeHavenScraper(CatScraper):
     """Scraper for Safe Haven for Cats."""
 
     def get_available_cats(self) -> list[Cat]:
-        listing_url = urljoin(AVALIBLE_CATS_URL, "/adopt/meet-the-cats/")
-        print(f"Fetching main cat listing from: {listing_url}")
+        listing_url = urljoin(AVAILABLE_CATS_URL, "/adopt/meet-the-cats/")
+        logger.info(f"Fetching main cat listing from: {listing_url}")
+
         response = requests.get(listing_url)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, "html.parser")
         cat_cards = soup.find_all("div", class_="sme-card")
-        print(f"Found {len(cat_cards)} cat cards.")
+        logger.info(f"Found {len(cat_cards)} cat cards.")
 
         cats: list[Cat] = []
 
         for idx, card in enumerate(cat_cards, start=1):
-            # TODO: Remove this once database has been implemented.
-            if idx == 2:
+            if idx > 2:
                 break
 
             link = card.find("a", href=True)  # type: ignore
             if link is None:
-                print(f"No link found for cat card #{idx}, skipping.")
+                logger.warning(f"No link found for cat card #{idx}, skipping.")
                 continue
 
-            profile_url = urljoin(AVALIBLE_CATS_URL, link["href"])  # type: ignore
+            profile_url = urljoin(AVAILABLE_CATS_URL, link["href"])  # type: ignore
             cat = self._scrape_cat_profile(profile_url)
 
             if cat:
-                print(f"Successfully scraped {cat.name}.")
+                logger.success(f"Successfully scraped '{cat.name}'.")
                 cats.append(cat)
             else:
-                print(f"Failed to scrape cat at {profile_url}.")
+                logger.error(f"Failed to scrape cat at {profile_url}.")
 
-        print(f"Total cats scraped successfully: {len(cats)}")
+        logger.info(f"Total cats scraped successfully: {len(cats)}")
         return cats
 
     def _scrape_cat_profile(self, url: str) -> Cat | None:
-        """Scrapes a cat's profile from the given URL.
-
-        Args:
-            url: The URL of the cat's profile.
-
-        Returns:
-            A Cat object containing the scraped data.
-            None if scraping failed.
-        """
-        print(f"Scraping cat profile from: {url}")
+        logger.debug(f"Scraping cat profile from: {url}")
         try:
             response = requests.get(url)
             response.raise_for_status()
         except requests.RequestException as e:
-            print(f"Request failed for {url}: {e}")
+            logger.error(f"Request failed for {url}: {e}")
             return None
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -91,7 +82,6 @@ class SafeHavenScraper(CatScraper):
         )
 
     def _extract_name(self, soup: BeautifulSoup) -> str:
-        """Returns the extracted cat's name."""
         intro_divs = soup.find_all("div", class_="et_pb_text_inner")
         name = "Unknown"
         for div in intro_divs:
@@ -100,18 +90,16 @@ class SafeHavenScraper(CatScraper):
                 name_part = text.split("Hey there!", 1)[-1][4:]
                 name = name_part.split("!")[0].strip()
                 break
-        print(f"Extracted name: {name}")
+        logger.debug(f"Extracted name: '{name}'")
         return name
 
     def _extract_images(self, soup: BeautifulSoup) -> list[str]:
-        """Returns the extracted image URLs."""
         image_tags = soup.find_all("img", class_="sme-round-small")
         images = [str(img.get("src")) for img in image_tags if img.get("src")]  # type: ignore
-        print(f"\tExtracted {len(images)} images.")
+        logger.debug(f"Extracted {len(images)} images.")
         return images
 
     def _extract_stats(self, soup: BeautifulSoup) -> dict[str, str]:
-        """Returns the extracted cat stats."""
         stats = {}
         table = soup.find("table", class_="sme-grid")
         if table:
@@ -121,22 +109,19 @@ class SafeHavenScraper(CatScraper):
                     key = cells[0].text.strip().lower()
                     value = cells[1].text.strip()
                     stats[key] = value
-        print(f"\tExtracted stats: {stats}")
+        logger.debug(f"Extracted stats: {stats}")
         return stats
 
     def _extract_story(self, soup: BeautifulSoup) -> str | None:
-        """Returns the extracted cat story."""
         story_section = soup.find("div", class_="et_pb_text_5")
         story = story_section.get_text(strip=True) if story_section else None
-        print(
-            f"\tExtracted story: {story[:30]}..."
-            if story
-            else "No story found."
-        )
+        if story:
+            logger.debug(f"Extracted story: {story[:30]}...")
+        else:
+            logger.debug("No story found.")
         return story
 
     def _parse_bool(self, val: str | None) -> bool | None:
-        """Returns yes/no converted to boolean."""
         if val is None:
             return None
         return {"yes": True, "no": False}.get(val.lower(), None)

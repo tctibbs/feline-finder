@@ -4,3 +4,4 @@ pytest
 BeautifulSoup4
 requests
 polars
+loguru
