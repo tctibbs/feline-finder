@@ -1,8 +1,11 @@
-"""Main Module."""
+"""main.py"""
 
 from loguru import logger
 
-import src
+from src.infrastructure.cat_repository import PolarsCatRepository
+from src.infrastructure.scrapers.safe_haven_scraper import SafeHavenScraper
+from src.use_cases.scraping import get_available_cats, scrape_cat_details
+from src.use_cases.tracking import identify_new_cats
 
 # Configure Loguru logging format
 logger.remove()
@@ -14,36 +17,27 @@ logger.add(
     colorize=True,
 )
 
-# Initialize the cat repository using Parquet format
-database = src.infrastructure.cat_repository.PolarsCatRepository(
-    "/workspaces/feline-finder/database/cats.parquet"
-)
 
-# Initialize the scraper for Safe Haven for Cats
-scraper = src.infrastructure.scrapers.SafeHavenScraper()
+def main() -> None:
+    logger.info("Starting workflow...")
 
-# Check available cats
-available_cats = scraper.get_available_listings()
+    scraper = SafeHavenScraper()
+    database = PolarsCatRepository(
+        "/workspaces/feline-finder/database/cats.parquet"
+    )
 
-# Get existing cats from database
-existing_cats = database.list_cats()
-logger.info(f"Currently {len(existing_cats)} cats in database.")
-for cat in existing_cats:
-    logger.debug(f"\t{cat}")
+    available_cats = get_available_cats(scraper)
+    new_cats = identify_new_cats(database, available_cats)
 
-# Identify cats needing scraping
-cats_to_scrape = {
-    name: url
-    for name, url in available_cats.items()
-    if name not in [cat.name for cat in existing_cats]
-}
-logger.info(f"{len(cats_to_scrape)} new cats to scrape.")
+    for name, profile_url in new_cats.items():
+        cat = scrape_cat_details(scraper, profile_url)
+        if cat:
+            database.add_cat(cat)
+        else:
+            logger.error(f"Failed scraping details for cat '{name}'.")
 
-# Scrape and add new cats to database
-for cat_name, profile_url in cats_to_scrape.items():
-    cat = scraper.scrape_cat_profile(profile_url)
-    if cat:
-        database.add_cat(cat)
-        logger.success(f"Added '{cat.name}' to database.")
-    else:
-        logger.error(f"Failed to scrape '{cat_name}'.")
+    logger.success("Workflow completed.")
+
+
+if __name__ == "__main__":
+    main()
