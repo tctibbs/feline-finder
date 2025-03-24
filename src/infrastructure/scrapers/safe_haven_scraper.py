@@ -1,6 +1,7 @@
 """Scraper for Safe Haven for Cats."""
 
 from urllib.parse import urljoin
+
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
@@ -109,7 +110,9 @@ class SafeHavenScraper(CatScraper):
                     key = cells[0].text.strip().lower()
                     value = cells[1].text.strip()
                     stats[key] = value
-        logger.debug(f"Extracted stats: {stats}")
+        logger.debug("Extracted stats:")
+        for key, value in stats.items():
+            logger.debug(f"\t{key}: {value}")
         return stats
 
     def _extract_story(self, soup: BeautifulSoup) -> str | None:
