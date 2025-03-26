@@ -1,12 +1,13 @@
 """Scraper for Safe Haven for Cats."""
 
-from urllib.parse import urljoin
+from datetime import datetime
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
 
-from src.entities import Cat
+from src.entities.cat import Cat, CatListing
 from src.use_cases import CatScraper
 
 AVAILABLE_CATS_URL = "https://www.safehavenforcats.org"
@@ -15,8 +16,8 @@ AVAILABLE_CATS_URL = "https://www.safehavenforcats.org"
 class SafeHavenScraper(CatScraper):
     """Scraper for Safe Haven for Cats."""
 
-    def get_available_listings(self) -> dict[str, str]:
-        """Scrape available cat names and their profile URLs."""
+    def get_available_listings(self) -> list[CatListing]:
+        """Scrape and return a list of currently available CatListings."""
         listing_url = urljoin(AVAILABLE_CATS_URL, "/adopt/meet-the-cats/")
         logger.info(f"Fetching main cat listing from: {listing_url}")
 
@@ -25,9 +26,10 @@ class SafeHavenScraper(CatScraper):
 
         soup = BeautifulSoup(response.text, "html.parser")
         cat_cards = soup.find_all("div", class_="sme-card")
-        # logger.info(f"Found {len(cat_cards)} cat cards.")
 
-        cat_profiles = {}
+        now = datetime.now()
+        listings: list[CatListing] = []
+        seen_ids: set[str] = set()
 
         for card in cat_cards:
             name_tag = card.find("h5", class_="sme-anm-name")
@@ -42,54 +44,33 @@ class SafeHavenScraper(CatScraper):
                 )
                 continue
 
-            cat_name = link.text.strip()
             profile_url = link["href"]
-            if profile_url not in cat_profiles.values():
-                cat_profiles[cat_name] = profile_url
+            cat_id = self._extract_cat_id(profile_url)
+            if not cat_id or cat_id in seen_ids:
+                continue
 
-        logger.info(f"Total cats avalible for adoption: {len(cat_profiles)}")
-        return cat_profiles
+            seen_ids.add(cat_id)
 
-    def scrape_cat_profile(self, profile_url: str) -> Cat | None:
-        """Public method to scrape a single cat profile."""
-        return self._scrape_cat_profile(profile_url)
+            listings.append(
+                CatListing(
+                    cat_id=cat_id,
+                    name=link.text.strip(),
+                    url=profile_url,
+                    listing_date=now,
+                )
+            )
 
-    # def get_available_cats(self) -> list[Cat]:
-    #     listing_url = urljoin(AVAILABLE_CATS_URL, "/adopt/meet-the-cats/")
-    #     logger.info(f"Fetching main cat listing from: {listing_url}")
+        logger.info(f"Total cats available for adoption: {len(listings)}")
+        return listings
 
-    #     response = requests.get(listing_url)
-    #     response.raise_for_status()
+    def scrape_cat_listing(self, listing: CatListing) -> Cat | None:
+        """Scrape a full Cat profile based on a CatListing."""
+        return self._scrape_from_url(listing)
 
-    #     soup = BeautifulSoup(response.text, "html.parser")
-    #     cat_cards = soup.find_all("div", class_="sme-card")
-    #     logger.info(f"Found {len(cat_cards)} cat cards.")
-
-    #     cats: list[Cat] = []
-
-    #     for idx, card in enumerate(cat_cards, start=1):
-    #         if idx > 2:
-    #             break
-
-    #         link = card.find("a", href=True)  # type: ignore
-    #         if link is None:
-    #             logger.warning(f"No link found for cat card #{idx}, skipping.")
-    #             continue
-
-    #         profile_url = urljoin(AVAILABLE_CATS_URL, link["href"])  # type: ignore
-    #         cat = self._scrape_cat_profile(profile_url)
-
-    #         if cat:
-    #             logger.success(f"Successfully scraped '{cat.name}'.")
-    #             cats.append(cat)
-    #         else:
-    #             logger.error(f"Failed to scrape cat at {profile_url}.")
-
-    #     logger.info(f"Total cats scraped successfully: {len(cats)}")
-    #     return cats
-
-    def _scrape_cat_profile(self, url: str) -> Cat | None:
+    def _scrape_from_url(self, listing: CatListing) -> Cat | None:
+        url = listing.url
         logger.debug(f"Scraping cat profile from: {url}")
+
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -99,12 +80,12 @@ class SafeHavenScraper(CatScraper):
 
         soup = BeautifulSoup(response.text, "html.parser")
 
-        name = self._extract_name(soup)
         image_urls = self._extract_images(soup)
         stats = self._extract_stats(soup)
 
-        return Cat(
-            name=name,
+        cat = Cat(
+            cat_id=listing.cat_id,
+            name=listing.name,
             age=stats.get("age", "Unknown"),
             gender=stats.get("gender", "Unknown"),
             breed=stats.get("breed", "Unknown"),
@@ -118,24 +99,22 @@ class SafeHavenScraper(CatScraper):
             ),
             status="Available",
             story=self._extract_story(soup),
-            image_urls=image_urls,
+            image_urls=[urljoin(AVAILABLE_CATS_URL, src) for src in image_urls],
+            shelter="Safe Haven for Cats",
+            date_listed=listing.listing_date,
+            date_adopted=None,
         )
 
-    def _extract_name(self, soup: BeautifulSoup) -> str:
-        intro_divs = soup.find_all("div", class_="et_pb_text_inner")
-        name = "Unknown"
-        for div in intro_divs:
-            text = div.get_text(strip=True)
-            if "Hey there!" in text:
-                name_part = text.split("Hey there!", 1)[-1][4:]
-                name = name_part.split("!")[0].strip()
-                break
-        logger.debug(f"Extracted name: '{name}'")
-        return name
+        return cat
+
+    def _extract_cat_id(self, url: str) -> str | None:
+        parsed = urlparse(url)
+        qs = parse_qs(parsed.query)
+        return qs.get("animal_id", [None])[0]
 
     def _extract_images(self, soup: BeautifulSoup) -> list[str]:
         image_tags = soup.find_all("img", class_="sme-round-small")
-        images = [str(img.get("src")) for img in image_tags if img.get("src")]  # type: ignore
+        images = [img["src"] for img in image_tags if img.get("src")]
         logger.debug(f"Extracted {len(images)} images.")
         return images
 
@@ -143,8 +122,8 @@ class SafeHavenScraper(CatScraper):
         stats = {}
         table = soup.find("table", class_="sme-grid")
         if table:
-            for row in table.find_all("tr", class_="sme-grid-row"):  # type: ignore
-                cells = row.find_all("td", class_="sme-grid-cell")  # type: ignore
+            for row in table.find_all("tr", class_="sme-grid-row"):
+                cells = row.find_all("td", class_="sme-grid-cell")
                 if len(cells) == 2:
                     key = cells[0].text.strip().lower()
                     value = cells[1].text.strip()

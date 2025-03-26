@@ -2,24 +2,22 @@
 
 from abc import ABC, abstractmethod
 
-from src.entities.cat import Cat
+from src.entities.cat import Cat, CatListing
 
 
 class CatScraper(ABC):
     """Abstract interface for cat scrapers."""
 
     @abstractmethod
-    def get_available_listings(self) -> dict[str, str]:
+    def get_available_listings(self) -> list[CatListing]:
         """
-        Scrape and return a list of currently available
-        cats by name and profile URL.
+        Scrape and return a list of currently available cat listings.
         """
         pass
 
     @abstractmethod
-    def scrape_cat_profile(self, profile_url: str) -> Cat | None:
+    def scrape_cat_listing(self, listing: CatListing) -> Cat | None:
         """
-        Given a cat's profile URL, scrape detailed information
-        and return a Cat object.
+        Given a CatListing, scrape and return the full Cat profile.
         """
         pass

@@ -1,11 +1,14 @@
 """Cat data model."""
 
+from datetime import datetime
+
 from pydantic import BaseModel, HttpUrl
 
 
 class Cat(BaseModel):
     """Encapsulates information pertaining to a cat listing."""
 
+    cat_id: str
     name: str
     age: str
     gender: str
@@ -19,9 +22,21 @@ class Cat(BaseModel):
     status: str
     story: str | None = None
     image_urls: list[HttpUrl] | None = None
+    shelter: str
+    date_listed: datetime
+    date_adopted: datetime | None = None
 
     def __str__(self) -> str:
         return (
             f"{self.name} ({self.age}, {self.gender}, {self.breed})"
             f" - {self.status}"
         )
+
+
+class CatListing(BaseModel):
+    """Information about a cat being listed as available."""
+
+    cat_id: str
+    name: str
+    url: HttpUrl
+    listing_date: datetime

@@ -4,7 +4,10 @@ from loguru import logger
 
 from src.infrastructure.cat_repository import PolarsCatRepository
 from src.infrastructure.scrapers.safe_haven_scraper import SafeHavenScraper
-from src.use_cases.scraping import get_available_cats, scrape_cat_details
+from src.use_cases.scraping import (
+    get_available_cat_listings,
+    scrape_cat_details,
+)
 from src.use_cases.tracking import identify_new_cats
 
 # Configure Loguru logging format
@@ -26,15 +29,17 @@ def main() -> None:
         "/workspaces/feline-finder/database/cats.parquet"
     )
 
-    available_cats = get_available_cats(scraper)
-    new_cats = identify_new_cats(database, available_cats)
+    available_cat_listings = get_available_cat_listings(scraper)
+    new_cat_listings = identify_new_cats(database, available_cat_listings)
 
-    for name, profile_url in new_cats.items():
-        cat = scrape_cat_details(scraper, profile_url)
+    for listing in new_cat_listings:
+        cat = scrape_cat_details(scraper, listing)
         if cat:
+            cat.date_listed = listing.listing_date
             database.add_cat(cat)
+            logger.success(f"Added '{cat.name}' to database.")
         else:
-            logger.error(f"Failed scraping details for cat '{name}'.")
+            logger.error(f"Failed scraping details for cat '{listing.cat_id}'.")
 
     logger.success("Workflow completed.")
 

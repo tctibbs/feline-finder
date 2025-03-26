@@ -1,15 +1,14 @@
 """Scraping-related use cases."""
 
-from src.entities import Cat
+from src.entities import Cat, CatListing
 from src.use_cases import CatScraper
-from typing import Dict
 
 
-def get_available_cats(scraper: CatScraper) -> Dict[str, str]:
-    """Retrieve available cat listings (name to URL mapping)."""
+def get_available_cat_listings(scraper: CatScraper) -> list[CatListing]:
+    """Retrieve available cat listings."""
     return scraper.get_available_listings()
 
 
-def scrape_cat_details(scraper: CatScraper, url: str) -> Cat | None:
+def scrape_cat_details(scraper: CatScraper, listing: CatListing) -> Cat | None:
     """Scrape detailed cat information from a cat profile URL."""
-    return scraper.scrape_cat_profile(url)
+    return scraper.scrape_cat_listing(listing)

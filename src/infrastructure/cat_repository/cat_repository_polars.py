@@ -16,6 +16,7 @@ class PolarsCatRepository(CatRepository):
         except FileNotFoundError:
             self.df = pl.DataFrame(
                 schema={
+                    "cat_id": pl.Utf8,
                     "name": pl.Utf8,
                     "age": pl.Utf8,
                     "gender": pl.Utf8,
@@ -29,6 +30,9 @@ class PolarsCatRepository(CatRepository):
                     "status": pl.Utf8,
                     "story": pl.Utf8,
                     "image_urls": pl.List(pl.Utf8),
+                    "shelter": pl.Utf8,
+                    "date_listed": pl.Datetime,
+                    "date_adopted": pl.Datetime,
                 }
             )
             self._save()
@@ -41,6 +45,7 @@ class PolarsCatRepository(CatRepository):
         """Add a new cat to the repository."""
         new_row = pl.DataFrame(
             {
+                "cat_id": [cat.cat_id],
                 "name": [cat.name],
                 "age": [cat.age],
                 "gender": [cat.gender],
@@ -54,6 +59,9 @@ class PolarsCatRepository(CatRepository):
                 "status": [cat.status],
                 "story": [cat.story],
                 "image_urls": [[str(url) for url in (cat.image_urls or [])]],
+                "shelter": [cat.shelter],
+                "date_listed": [cat.date_listed],
+                "date_adopted": [cat.date_adopted],
             },
         )
         self.df = pl.concat([self.df, new_row], how="vertical")

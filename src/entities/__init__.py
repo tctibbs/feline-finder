@@ -7,6 +7,6 @@ In Clean Architecture, entities are the most stable and reusable components.
 They should not depend on any other layer of the application.
 """
 
-from .cat import Cat
+from .cat import Cat, CatListing
 
-__all__ = ["Cat"]
+__all__ = ["Cat", "CatListing"]
