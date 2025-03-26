@@ -7,6 +7,7 @@ from src.infrastructure.scrapers.safe_haven_scraper import SafeHavenScraper
 from src.use_cases.scraping import (
     get_available_cat_listings,
     scrape_cat_details,
+    download_cat_images,
 )
 from src.use_cases.tracking import identify_new_cats
 
@@ -34,8 +35,9 @@ def main() -> None:
 
     for listing in new_cat_listings:
         cat = scrape_cat_details(scraper, listing)
+
         if cat:
-            cat.date_listed = listing.listing_date
+            cat_images = download_cat_images(cat)
             database.add_cat(cat)
             logger.success(f"Added '{cat.name}' to database.")
         else:

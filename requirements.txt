@@ -6,3 +6,4 @@ requests
 polars
 loguru
 pydantic
+pilllow
