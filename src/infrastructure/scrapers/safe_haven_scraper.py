@@ -72,7 +72,7 @@ class SafeHavenScraper(CatScraper):
         logger.debug(f"Scraping cat profile from: {url}")
 
         try:
-            response = requests.get(url)
+            response = requests.get(str(url))
             response.raise_for_status()
         except requests.RequestException as e:
             logger.error(f"Request failed for {url}: {e}")
@@ -122,8 +122,8 @@ class SafeHavenScraper(CatScraper):
         stats = {}
         table = soup.find("table", class_="sme-grid")
         if table:
-            for row in table.find_all("tr", class_="sme-grid-row"):
-                cells = row.find_all("td", class_="sme-grid-cell")
+            for row in table.find_all("tr", class_="sme-grid-row"):  # type: ignore
+                cells = row.find_all("td", class_="sme-grid-cell")  # type: ignore
                 if len(cells) == 2:
                     key = cells[0].text.strip().lower()
                     value = cells[1].text.strip()
