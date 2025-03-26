@@ -75,14 +75,27 @@ class PolarsCatRepository(CatRepository):
         data = result.to_dicts()[0]
         return Cat(**data)
 
-    def update_cat_status(self, name: str, status: str) -> None:
-        """Update the adoption status of a cat."""
+    def get_cat_by_id(self, cat_id: str) -> Cat | None:
+        """Retrieve a cat by unique ID."""
+        result = self.df.filter(pl.col("cat_id") == cat_id)
+        if result.is_empty():
+            return None
+        return Cat(**result.to_dicts()[0])
+
+    def update_cat_status(self, cat_id: str, status: str) -> None:
+        """Update only the status field of a cat by ID."""
         self.df = self.df.with_columns(
-            pl.when(pl.col("name") == name)
+            pl.when(pl.col("cat_id") == cat_id)
             .then(status)
             .otherwise(pl.col("status"))
             .alias("status")
         )
+        self._save()
+
+    def save_cat(self, cat: Cat) -> None:
+        """Update a cat record by replacing it entirely."""
+        self.df = self.df.filter(pl.col("cat_id") != cat.cat_id)
+        self.add_cat(cat)
         self._save()
 
     def list_cats(self, status: str | None = None) -> List[Cat]:
