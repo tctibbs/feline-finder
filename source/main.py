@@ -6,6 +6,7 @@ from pathlib import Path
 import schedule
 from loguru import logger
 
+from source.alerts import DummyAlertSender
 from source.monitoring import CatMonitor
 from source.providers import SafeHavenScraper
 from source.repositories import FilesystemImageRepository, PolarsCatRepository
@@ -38,6 +39,7 @@ def main() -> None:
         cat_repo=cat_repository,
         image_repo=image_repository,
     )
+    monitor.register_alert(DummyAlertSender())
 
     # Run once at startup
     monitor.run_once()

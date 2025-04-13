@@ -8,3 +8,4 @@ loguru
 pydantic
 pillow
 schedule
+twilio

@@ -2,6 +2,7 @@
 
 from loguru import logger
 
+from source.alerts import CatAlertSender
 from source.monitoring import tracking
 from source.providers import CatListingProvider
 from source.repositories import CatImageRepository, CatRepository
@@ -19,6 +20,11 @@ class CatMonitor:
         self.provider = listing_provider
         self.cat_repo = cat_repo
         self.image_repo = image_repo
+        self._alerts: list[CatAlertSender] = []
+
+    def register_alert(self, alert: CatAlertSender) -> None:
+        """Register a CatAlertSender to be notified of new cats."""
+        self._alerts.append(alert)
 
     def run_once(self) -> None:
         logger.info("🐾 Running CatMonitor workflow...")
@@ -36,6 +42,9 @@ class CatMonitor:
             self.image_repo.save_images(cat, images)
             self.cat_repo.add_cat(cat)
             logger.success(f"Added new cat '{cat.name}'")
+
+            for alert in self._alerts:
+                alert.send(cat)
 
         adopted_ids = tracking.identify_adopted_cats(self.cat_repo, listings)
         for cat_id in adopted_ids:

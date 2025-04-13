@@ -45,20 +45,30 @@ package source {
         }
     }
 
+    package "alerts"{
+        package "entities" {
+            interface AlertSender
+        }
+
+        package "infrastructure" {
+            class DummyAlertSender
+
+            DummyAlertSender --|> AlertSender
+        }
+    }
+
     package "monitoring" {
         package "usecases" {
-            package "tracking" {
-                component identify_new_cats
-                component identify_adopted_cats
-                component update_adoption_status
-            }
-            tracking --> Cat 
-            tracking --> CatListing
+            component tracking
         }
 
         package "adapters" {
             class CatMonitor
             CatMonitor --> tracking
+            CatMonitor --> AlertSender
+            CatMonitor --> CatListingProvider
+            CatMonitor --> CatRepository
+            CatMonitor --> CatImageRepository
         }
     }
 }

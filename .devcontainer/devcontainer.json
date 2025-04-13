@@ -11,6 +11,8 @@
         "context": ".."
     },
 
+    "runArgs": ["--env-file", ".env"],
+
     // Customizations for the development environment, specifically for VSCode
     "customizations": {
         "vscode": {
