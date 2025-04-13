@@ -1,5 +1,6 @@
 """Polars implementation of CatRepository using Parquet."""
 
+from pathlib import Path
 from typing import List
 
 import polars as pl
@@ -12,8 +13,10 @@ from .. import CatRepository
 class PolarsCatRepository(CatRepository):
     """Polars-based cat repository implementation using Parquet."""
 
-    def __init__(self, parquet_path: str = "cats.parquet") -> None:
+    def __init__(self, parquet_path: Path) -> None:
         self.parquet_path = parquet_path
+        if not parquet_path.exists():
+            raise FileNotFoundError(f"Parquet file not found: {parquet_path}")
         try:
             self.df = pl.read_parquet(parquet_path)
         except FileNotFoundError:
