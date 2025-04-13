@@ -1,0 +1,77 @@
+@startuml FelineFinder
+
+skinparam packageStyle rectangle
+allow_mixing
+
+package source {   
+    package "cat" {
+        package "entities" {
+            class Cat
+            class CatListing
+        }
+    }
+
+    
+    package "provider" {
+        package "entities" {
+            interface CatListingProvider
+
+            CatListingProvider --> CatListing
+            CatListingProvider --> Cat
+        }
+
+        package "infrastructure" {
+            class SafeHavenScraper
+
+            SafeHavenScraper --|> CatListingProvider
+        }
+    }
+
+    package "repository" {
+        package "entities" {
+            interface CatRepository
+            interface CatImageRepository
+
+            CatRepository --> Cat
+            CatImageRepository --> Cat
+        }
+
+        package "infrastructure" {
+            class PolarsCatRepository
+            class FilesystemImageRepository
+
+            PolarsCatRepository --|> CatRepository
+            FilesystemImageRepository --|> CatImageRepository
+        }
+    }
+
+    package "monitoring" {
+        package "usecases" {
+            package "tracking" {
+                component identify_new_cats
+                component identify_adopted_cats
+                component update_adoption_status
+            }
+            tracking --> Cat 
+            tracking --> CatListing
+        }
+
+        package "adapters" {
+            class CatMonitor
+            CatMonitor --> tracking
+        }
+    }
+}
+
+package "app" {
+  component main
+
+    main --> CatMonitor
+    main --> FilesystemImageRepository
+    main --> PolarsCatRepository
+    main --> SafeHavenScraper
+}
+
+
+
+@enduml
