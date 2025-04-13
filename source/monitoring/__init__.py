@@ -6,5 +6,6 @@ changes in cat availability and adoption status over time.
 """
 
 from .usecases import tracking
+from .adapters.cat_monitor import CatMonitor
 
-__all__ = ["tracking"]
+__all__ = ["tracking", "CatMonitor"]
