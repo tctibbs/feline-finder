@@ -6,7 +6,8 @@ from pathlib import Path
 import schedule
 from loguru import logger
 
-from source.alerts import DummyAlertSender
+from source.alerts import DummyAlertSender, FilteredAlertSender
+from source.alerts.usecases import filters
 from source.monitoring import CatMonitor
 from source.providers import SafeHavenScraper
 from source.repositories import FilesystemImageRepository, PolarsCatRepository
@@ -39,14 +40,19 @@ def main() -> None:
         cat_repo=cat_repository,
         image_repo=image_repository,
     )
-    monitor.register_alert(DummyAlertSender())
+
+    # Register alerts
+    female_alert = FilteredAlertSender(DummyAlertSender())
+    female_alert.add_filter(filters.is_female)
+    monitor.register_alert(female_alert)
 
     # Run once at startup
     monitor.run_once()
 
-    # Schedule every 10 minutes
-    schedule.every(10).minutes.do(monitor.run_once)
-    logger.info("Monitoring scheduled every 10 minutes.")
+    # Schedule every X minutes
+    hour_interval = 2
+    schedule.every(hour_interval).hours.do(monitor.run_once)
+    logger.info(f"Monitoring scheduled every {hour_interval} hours.")
 
     # Event loop
     while True:

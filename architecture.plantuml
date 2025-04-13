@@ -50,6 +50,14 @@ package source {
             interface AlertSender
         }
 
+        package "usecases" {
+            class FilteredAlertSender
+            component filters       
+
+            FilteredAlertSender --> AlertSender
+            FilteredAlertSender --> filters
+        }
+
         package "infrastructure" {
             class DummyAlertSender
 
