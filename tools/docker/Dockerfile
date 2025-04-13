@@ -7,6 +7,7 @@ ENV PYTHONUNBUFFERED=1
 # Install tzdata for timezone configuration
 RUN apt-get update && \
     apt-get install -y tzdata && \
+    apt-get install plantuml && \
     rm -rf /var/lib/apt/lists/*
 
 # Set the timezone to EST (America/New_York)

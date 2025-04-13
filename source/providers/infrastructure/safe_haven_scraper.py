@@ -1,19 +1,22 @@
 """Scraper for Safe Haven for Cats."""
 
 from datetime import datetime
+from io import BytesIO
 from urllib.parse import parse_qs, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
+from PIL import Image
 
-from src.entities.cat import Cat, CatListing
-from src.use_cases import CatScraper
+from source.cat import Cat, CatListing
+
+from .. import CatListingProvider
 
 AVAILABLE_CATS_URL = "https://www.safehavenforcats.org"
 
 
-class SafeHavenScraper(CatScraper):
+class SafeHavenScraper(CatListingProvider):
     """Scraper for Safe Haven for Cats."""
 
     def get_available_listings(self) -> list[CatListing]:
@@ -32,20 +35,20 @@ class SafeHavenScraper(CatScraper):
         seen_ids: set[str] = set()
 
         for card in cat_cards:
-            name_tag = card.find("h5", class_="sme-anm-name")
+            name_tag = card.find("h5", class_="sme-anm-name")  # type: ignore
             if not name_tag:
                 logger.warning("Cat name not found in card, skipping.")
                 continue
 
-            link = name_tag.find("a", href=True)
+            link = name_tag.find("a", href=True)  # type: ignore
             if not link:
                 logger.warning(
                     "Profile URL not found in cat name tag, skipping."
                 )
                 continue
 
-            profile_url = link["href"]
-            cat_id = self._extract_cat_id(profile_url)
+            profile_url = link["href"]  # type: ignore
+            cat_id = self._extract_cat_id(profile_url)  # type: ignore
             if not cat_id or cat_id in seen_ids:
                 continue
 
@@ -55,7 +58,7 @@ class SafeHavenScraper(CatScraper):
                 CatListing(
                     cat_id=cat_id,
                     name=link.text.strip(),
-                    url=profile_url,
+                    url=profile_url,  # type: ignore
                     listing_date=now,
                 )
             )
@@ -63,9 +66,34 @@ class SafeHavenScraper(CatScraper):
         logger.info(f"Total cats available for adoption: {len(listings)}")
         return listings
 
-    def scrape_cat_listing(self, listing: CatListing) -> Cat | None:
+    def get_cat_profile(self, listing: CatListing) -> Cat | None:
         """Scrape a full Cat profile based on a CatListing."""
         return self._scrape_from_url(listing)
+
+    def get_cat_images(self, cat: Cat) -> list[Image.Image]:
+        """
+        Downloads and returns the cat's images as a list of PIL Images.
+
+        Skips any images that fail to download or parse.
+        """
+        if not cat.image_urls:
+            logger.warning(f"No image URLs found for cat '{cat.name}'.")
+            return []
+
+        images: list[Image.Image] = []
+
+        for url in cat.image_urls:
+            try:
+                logger.debug(f"Downloading image: {url}")
+                response = requests.get(str(url), timeout=10)
+                response.raise_for_status()
+                image = Image.open(BytesIO(response.content)).convert("RGB")
+                images.append(image)
+            except (requests.RequestException, IOError) as e:
+                logger.warning(f"Failed to download image from {url}: {e}")
+
+        logger.info(f"Downloaded {len(images)} images for '{cat.name}'")
+        return images
 
     def _scrape_from_url(self, listing: CatListing) -> Cat | None:
         url = listing.url
@@ -99,7 +127,7 @@ class SafeHavenScraper(CatScraper):
             ),
             status="Available",
             story=self._extract_story(soup),
-            image_urls=[urljoin(AVAILABLE_CATS_URL, src) for src in image_urls],
+            image_urls=[urljoin(AVAILABLE_CATS_URL, src) for src in image_urls],  # type: ignore
             shelter="Safe Haven for Cats",
             date_listed=listing.listing_date,
             date_adopted=None,
@@ -114,9 +142,9 @@ class SafeHavenScraper(CatScraper):
 
     def _extract_images(self, soup: BeautifulSoup) -> list[str]:
         image_tags = soup.find_all("img", class_="sme-round-small")
-        images = [img["src"] for img in image_tags if img.get("src")]
+        images = [img["src"] for img in image_tags if img.get("src")]  # type: ignore
         logger.debug(f"Extracted {len(images)} images.")
-        return images
+        return images  # type: ignore
 
     def _extract_stats(self, soup: BeautifulSoup) -> dict[str, str]:
         stats = {}

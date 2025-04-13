@@ -1,11 +1,12 @@
-"""main.py"""
+"""Feline Finder main script."""
+
+from pathlib import Path
 
 from loguru import logger
 
-from src.infrastructure.cat_repository import PolarsCatRepository
-from src.infrastructure.scrapers.safe_haven_scraper import SafeHavenScraper
-from src.use_cases import scraping, tracking
-from pathlib import Path
+from source.monitoring import tracking
+from source.providers import SafeHavenScraper
+from source.repositories import PolarsCatRepository
 
 # Configure Loguru logging format
 logger.remove()
@@ -27,7 +28,7 @@ def main() -> None:
     )
 
     # find current listings
-    available_cat_listings = scraping.get_available_cat_listings(scraper)
+    available_cat_listings = scraper.get_available_listings()
 
     # Identify new cats
     new_cat_listings = tracking.identify_new_cats(
@@ -36,9 +37,9 @@ def main() -> None:
     )
 
     for listing in new_cat_listings:
-        cat = scraping.scrape_cat_details(scraper, listing)
+        cat = scraper.get_cat_profile(listing)
         if cat:
-            cat_images = scraping.download_cat_images(cat)
+            cat_images = scraper.get_cat_images(cat)
             for image in cat_images:
                 image.save(
                     Path("/workspaces/feline-finder/database/cat_images")

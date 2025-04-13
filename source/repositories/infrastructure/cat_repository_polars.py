@@ -1,9 +1,12 @@
 """Polars implementation of CatRepository using Parquet."""
 
-import polars as pl
 from typing import List
-from src.entities import Cat
-from src.use_cases.cat_repository import CatRepository
+
+import polars as pl
+
+from source.cat import Cat
+
+from .. import CatRepository
 
 
 class PolarsCatRepository(CatRepository):

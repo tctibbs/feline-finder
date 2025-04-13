@@ -1,11 +1,11 @@
-"""Tracking-related use cases."""
+"""Cat Tracking Use Cases."""
 
 from datetime import datetime
 
 from loguru import logger
 
-from src.entities import CatListing
-from src.use_cases.cat_repository import CatRepository
+from source.cat import CatListing
+from source.repositories import CatRepository
 
 
 def identify_new_cats(
@@ -32,8 +32,8 @@ def identify_adopted_cats(
     cat_repository: CatRepository, available_cat_listings: list[CatListing]
 ) -> list[str]:
     """
-    Identify cat_ids that were previously available but are now missing from the current listing,
-    excluding cats already marked as 'Adopted'.
+    Identify cat_ids that were previously available but are now missing from the
+    current listing, excluding cats already marked as 'Adopted'.
     """
     available_ids = {listing.cat_id for listing in available_cat_listings}
     tracked_cats = cat_repository.list_cats()
@@ -68,5 +68,5 @@ def update_adoption_status(
         cat.date_adopted = datetime.now()
         logger.info(f"Marked '{cat.name}' as adopted on {cat.date_adopted}.")
 
-    cat_repository.save_cat(cat)  # new method you'll add to update full object
+    cat_repository.save_cat(cat)
     logger.success(f"Updated status for '{cat.name}' to '{status}'.")

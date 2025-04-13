@@ -31,12 +31,3 @@ class Cat(BaseModel):
             f"{self.name} ({self.age}, {self.gender}, {self.breed})"
             f" - {self.status}"
         )
-
-
-class CatListing(BaseModel):
-    """Information about a cat being listed as available."""
-
-    cat_id: str
-    name: str
-    url: HttpUrl
-    listing_date: datetime

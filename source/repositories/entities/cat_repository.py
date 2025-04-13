@@ -2,11 +2,12 @@
 
 from abc import ABC, abstractmethod
 from typing import List
-from src.entities import Cat
+
+from source.cat import Cat
 
 
 class CatRepository(ABC):
-    """Abstract interface for a cat repository."""
+    """Abstract interface for storing and retrieving cat records."""
 
     @abstractmethod
     def add_cat(self, cat: Cat) -> None:
